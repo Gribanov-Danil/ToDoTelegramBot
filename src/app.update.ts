@@ -1,7 +1,9 @@
 import { AppService } from "./app.service"
-import { Hears, InjectBot, Start, Update } from "nestjs-telegraf"
-import { Context, Telegraf } from "telegraf"
-import { actionButtons } from "./app.buttons"
+import { Ctx, Hears, InjectBot, Message, On, Start, Update } from "nestjs-telegraf"
+import { Telegraf } from "telegraf"
+import { actionButtons, markCompletion, toDoList } from "./app.buttons"
+import { Context } from "./context.interface"
+import { getTaskList } from "./app.utils"
 
 const todos = [
   {
@@ -34,12 +36,28 @@ export class AppUpdate {
     await context.reply("Что хочешь сделать, брат?", actionButtons())
   }
 
-  @Hears("📔 Список дел")
-  async getAll(context: Context) {
-    await context.reply(
-      `Ваш список дел: \n${todos
-        .map((action) => (action.isCompleted ? "✅" : "❌") + action.name + "\n")
-        .join("")}`,
-    )
+  @Hears(toDoList)
+  async getToDoList(context: Context) {
+    await context.reply(getTaskList(todos))
+  }
+
+  @Hears(markCompletion)
+  async setDoneTask(context: Context) {
+    await context.reply("Напишите ID задачи: ")
+    context.session.type = "done"
+  }
+
+  @On("text")
+  async getMessage(@Message("text") message: string, @Ctx() context: Context) {
+    if (!context.session.type) return
+    if (context.session.type === "done") {
+      const todo = todos.find((task) => task.id === Number(message))
+      if (!todo) {
+        await context.deleteMessage()
+        await context.reply("Данная задача не найдена.\nПроверьте корректность введенного ID")
+      }
+      todo.isCompleted = !todo.isCompleted
+      await context.reply(getTaskList(todos))
+    }
   }
 }
