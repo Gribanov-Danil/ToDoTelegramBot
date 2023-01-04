@@ -1,7 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
-import { InjectBot, Start, Update } from "nestjs-telegraf";
-import { Context, Telegraf } from 'telegraf';
+import { AppService } from "./app.service"
+import { InjectBot, Start, Update } from "nestjs-telegraf"
+import { Context, Telegraf } from "telegraf"
+import { actionButtons } from "./app.buttons"
 
 @Update()
 export class AppUpdate {
@@ -12,6 +12,7 @@ export class AppUpdate {
 
   @Start()
   async startCommand(context: Context) {
-    await context.reply('Привет, брат 🐺');
+    await context.reply("Привет, брат 🐺")
+    await context.reply("Что хочешь сделать, брат?", actionButtons())
   }
 }
