@@ -74,6 +74,15 @@ export class AppUpdate {
       await context.reply(getTaskList(todos))
     }
     if (context.session.type === "edit") {
+      const [taskId, taskName] = message.split(" | ")
+      const todo = todos.find((task) => task.id === Number(taskId))
+      if (!todo) {
+        await context.deleteMessage()
+        await context.reply("Данная задача не найдена.\nПроверьте корректность введенного ID")
+        return
+      }
+      todo.name = taskName
+      await context.reply(getTaskList(todos))
     }
     if (context.session.type === "remove") {
       const todo = todos.find((task) => task.id === Number(message))
