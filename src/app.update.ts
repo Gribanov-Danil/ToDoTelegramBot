@@ -1,7 +1,7 @@
 import { AppService } from "./app.service"
 import { Ctx, Hears, InjectBot, Message, On, Start, Update } from "nestjs-telegraf"
 import { Telegraf } from "telegraf"
-import { actionButtons, markCompletion, toDoList } from "./app.buttons"
+import { actionButtons, deleteTask, editingTask, markCompletion, toDoList } from "./app.buttons"
 import { Context } from "./context.interface"
 import { getTaskList } from "./app.utils"
 
@@ -46,6 +46,19 @@ export class AppUpdate {
     await context.reply("Напишите ID задачи: ")
     context.session.type = "done"
   }
+  @Hears(editingTask)
+  async editTask(context: Context) {
+    await context.deleteMessage()
+    await context.replyWithHTML(
+      "Напишите ID задачи и её новое название:\n" + "В формате '<b>1 | Новое название</b>'",
+    )
+    context.session.type = "edit"
+  }
+  @Hears(deleteTask)
+  async deleteTask(context: Context) {
+    await context.reply("Напишите ID задачи: ")
+    context.session.type = "remove"
+  }
 
   @On("text")
   async getMessage(@Message("text") message: string, @Ctx() context: Context) {
@@ -55,9 +68,21 @@ export class AppUpdate {
       if (!todo) {
         await context.deleteMessage()
         await context.reply("Данная задача не найдена.\nПроверьте корректность введенного ID")
+        return
       }
       todo.isCompleted = !todo.isCompleted
       await context.reply(getTaskList(todos))
+    }
+    if (context.session.type === "edit") {
+    }
+    if (context.session.type === "remove") {
+      const todo = todos.find((task) => task.id === Number(message))
+      if (!todo) {
+        await context.deleteMessage()
+        await context.reply("Данная задача не найдена.\nПроверьте корректность введенного ID")
+        return
+      }
+      await context.reply(getTaskList(todos.filter((task) => task.id !== Number(message))))
     }
   }
 }
