@@ -1,27 +1,17 @@
 import { AppService } from "./app.service"
 import { Ctx, Hears, InjectBot, Message, On, Start, Update } from "nestjs-telegraf"
 import { Telegraf } from "telegraf"
-import { actionButtons, deleteTask, editingTask, markCompletion, toDoList } from "./app.buttons"
+import {
+  actionButtons,
+  createTask,
+  deleteTask,
+  editingTask,
+  markCompletion,
+  toDoList,
+} from "./app.buttons"
 import { Context } from "./context.interface"
 import { getTaskList } from "./app.utils"
 
-const todos = [
-  {
-    id: 1,
-    name: "Помыть кота",
-    isCompleted: false,
-  },
-  {
-    id: 2,
-    name: "Покушать",
-    isCompleted: false,
-  },
-  {
-    id: 3,
-    name: "Поспать",
-    isCompleted: true,
-  },
-]
 @Update()
 export class AppUpdate {
   constructor(
@@ -36,8 +26,15 @@ export class AppUpdate {
     await context.reply("Что хочешь сделать, брат?", actionButtons())
   }
 
+  @Hears(createTask)
+  async createTask(context: Context) {
+    context.session.type = "create"
+    await context.reply("Что нужно сделать?")
+  }
+
   @Hears(toDoList)
   async getToDoList(context: Context) {
+    const todos = await this.appService.getAll()
     await context.reply(getTaskList(todos))
   }
 
@@ -63,35 +60,37 @@ export class AppUpdate {
   @On("text")
   async getMessage(@Message("text") message: string, @Ctx() context: Context) {
     if (!context.session.type) return
+    if (context.session.type === "create") {
+      const toDoResponse = await this.appService.createTask(message)
+      await context.reply(getTaskList(toDoResponse))
+    }
     if (context.session.type === "done") {
-      const todo = todos.find((task) => task.id === Number(message))
-      if (!todo) {
+      const toDoResponse = await this.appService.doneTask(Number(message))
+      if (!toDoResponse) {
         await context.deleteMessage()
         await context.reply("Данная задача не найдена.\nПроверьте корректность введенного ID")
         return
       }
-      todo.isCompleted = !todo.isCompleted
-      await context.reply(getTaskList(todos))
+      await context.reply(getTaskList(toDoResponse))
     }
     if (context.session.type === "edit") {
       const [taskId, taskName] = message.split(" | ")
-      const todo = todos.find((task) => task.id === Number(taskId))
-      if (!todo) {
+      const toDoResponse = await this.appService.editTask(Number(taskId), taskName)
+      if (!toDoResponse) {
         await context.deleteMessage()
         await context.reply("Данная задача не найдена.\nПроверьте корректность введенного ID")
         return
       }
-      todo.name = taskName
-      await context.reply(getTaskList(todos))
+      await context.reply(getTaskList(toDoResponse))
     }
     if (context.session.type === "remove") {
-      const todo = todos.find((task) => task.id === Number(message))
-      if (!todo) {
+      const toDoResponse = await this.appService.deleteTask(Number(message))
+      if (!toDoResponse) {
         await context.deleteMessage()
         await context.reply("Данная задача не найдена.\nПроверьте корректность введенного ID")
         return
       }
-      await context.reply(getTaskList(todos.filter((task) => task.id !== Number(message))))
+      await context.reply(getTaskList(toDoResponse))
     }
   }
 }

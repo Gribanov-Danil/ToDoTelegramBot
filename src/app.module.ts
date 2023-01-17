@@ -5,6 +5,7 @@ import { TelegrafModule } from "nestjs-telegraf"
 import * as LocalSession from "telegraf-session-local"
 import { TypeOrmModule } from "@nestjs/typeorm"
 import { join } from "path"
+import { TaskEntity } from "./task.entity"
 
 const sessions = new LocalSession({ database: "session_db.json" })
 @Module({
@@ -24,6 +25,7 @@ const sessions = new LocalSession({ database: "session_db.json" })
       migrations: [join(__dirname, "**", "*.entity.{ts,js}")],
       synchronize: true,
     }),
+    TypeOrmModule.forFeature([TaskEntity]),
   ],
   providers: [AppService, AppUpdate],
 })
