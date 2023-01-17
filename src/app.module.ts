@@ -16,10 +16,10 @@ const sessions = new LocalSession({ database: "session_db.json" })
     TypeOrmModule.forRoot({
       type: "postgres",
       host: "localhost",
-      port: 5433,
+      port: 5432,
       database: "todo-app-bot",
       username: "postgres",
-      password: "",
+      password: "postgresAdmin",
       entities: [join(__dirname, "**", "*.entity.{ts,js}")],
       migrations: [join(__dirname, "**", "*.entity.{ts,js}")],
       synchronize: true,
